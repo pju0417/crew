@@ -411,6 +411,44 @@
     100%{ transform:scale(1);   opacity:1; }
   }
 
+  /* 게임 방법 */
+  .howto-section {
+    margin-bottom:18px;
+  }
+  .howto-title {
+    font-family:'Jua',sans-serif;
+    font-size:1rem;
+    color:var(--accent);
+    margin-bottom:8px;
+  }
+  .howto-section p, .howto-section li {
+    font-size:0.88rem;
+    color:var(--text-dim);
+    line-height:1.7;
+  }
+  .howto-list {
+    padding-left:18px;
+  }
+  .howto-list li { margin-bottom:4px; }
+  .howto-card-row {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:8px;
+    font-size:0.88rem;
+    color:var(--text-dim);
+  }
+  .howto-badge {
+    font-family:'Jua',sans-serif;
+    font-size:0.78rem;
+    padding:3px 10px;
+    border-radius:6px;
+    flex-shrink:0;
+  }
+  .howto-badge.frac { background:rgba(74,158,255,0.25); color:#a0c8ff; }
+  .howto-badge.dec  { background:rgba(76,175,125,0.25); color:#a0f0c0; }
+  .howto-badge.pct  { background:rgba(155,109,255,0.25); color:#d0b0ff; }
+
   @media(max-width:480px){
     .card{width:80px;height:116px;}
     .card-main{font-size:0.8rem;}
@@ -437,6 +475,7 @@
       <div style="display:flex;flex-direction:column;gap:10px;">
         <button class="btn btn-primary" onclick="showCreateRoom()">🏠 방 만들기</button>
         <button class="btn btn-secondary" onclick="showJoinRoom()">🔑 방 코드로 참가</button>
+        <button class="btn btn-secondary" onclick="showHowTo()" style="border-color:#9b6dff;color:#d0b0ff;">📖 게임 방법</button>
       </div>
     </div>
 
@@ -587,6 +626,63 @@
       <button class="btn btn-secondary" style="flex:1;" onclick="leaveRoom()">로비로</button>
       <button class="btn btn-primary" style="flex:1;" onclick="playAgain()">다시 하기</button>
     </div>
+  </div>
+</div>
+
+<!-- 게임 방법 오버레이 -->
+<div id="overlay-howto" class="overlay hidden">
+  <div class="overlay-box" style="max-width:480px;max-height:85vh;overflow-y:auto;text-align:left;">
+    <h2 style="text-align:center;margin-bottom:18px;">📖 게임 방법</h2>
+
+    <div class="howto-section">
+      <div class="howto-title">🎯 목표</div>
+      <p>팀원들과 협력해서 주어진 카드를 <strong>오름차순 또는 내림차순</strong>으로 순서에 맞게 내세요. 모든 카드가 올바른 순서면 성공!</p>
+    </div>
+
+    <div class="howto-section">
+      <div class="howto-title">🃏 카드 종류</div>
+      <div class="howto-card-row">
+        <span class="howto-badge frac">분수</span>
+        <span>0~1 사이의 분수. 나눗셈·소수·분수 형태로 표기</span>
+      </div>
+      <div class="howto-card-row">
+        <span class="howto-badge dec">소수</span>
+        <span>0.1~4.9 사이의 소수. 나눗셈·분수·소수 형태로 표기</span>
+      </div>
+      <div class="howto-card-row">
+        <span class="howto-badge pct">백분율</span>
+        <span>1~99%. 비율식·글 설명·% 형태로 표기</span>
+      </div>
+    </div>
+
+    <div class="howto-section">
+      <div class="howto-title">🔄 한 라운드 흐름</div>
+      <ol class="howto-list">
+        <li>라운드 시작 — 이번 라운드 <strong>카드 종류</strong>와 <strong>방향(오름/내림차순)</strong> 공개</li>
+        <li>각자 카드를 나눠 받음 (전체 8장을 인원 수로 나눔)</li>
+        <li>카드에 적힌 식을 계산해서 값을 파악</li>
+        <li>팀원과 상의해 순서에 맞게 카드를 냄</li>
+        <li>모두 다 내면 자동으로 순서 검증 → 성공 / 실패</li>
+      </ol>
+    </div>
+
+    <div class="howto-section">
+      <div class="howto-title">💡 핵심 규칙</div>
+      <ul class="howto-list">
+        <li>카드를 <strong>중간에 끼워넣을 수 없어요</strong> — 낸 순서가 곧 정렬 순서</li>
+        <li>같은 값의 카드는 절대 나오지 않아요</li>
+        <li>같은 값이 연속되면 실패예요 (동점 불허)</li>
+        <li>라운드 시작 전 <strong>내 카드 범위</strong>를 확인하고 전략을 세우세요</li>
+        <li>AI 플레이어는 카드 범위가 좁을수록 천천히 생각해요</li>
+      </ul>
+    </div>
+
+    <div class="howto-section">
+      <div class="howto-title">🏆 게임 종료</div>
+      <p>정해진 라운드를 모두 마치면 게임 종료. 몇 라운드를 성공했는지 확인!</p>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="hideOverlay('howto')">확인!</button>
   </div>
 </div>
 
@@ -1577,6 +1673,8 @@ db.ref('cardGameCoop/rooms').once('value', snap => {
     }
   });
 });
+
+function showHowTo(){ showOverlay('howto'); }
 
 console.log('🃏 수학 카드 협동 v2.0 - made by 박선생');
 </script>
