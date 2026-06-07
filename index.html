@@ -245,7 +245,7 @@
 
   /* 카드 */
   .card {
-    width:78px; height:112px;
+    width:96px; height:138px;
     border-radius:10px;
     display:flex; flex-direction:column;
     align-items:center; justify-content:center;
@@ -284,7 +284,7 @@
 
   .card-main {
     font-family:'Jua',sans-serif;
-    font-size:0.95rem;
+    font-size:1.05rem;
     text-align:center;
     line-height:1.4;
     color:#fff;
@@ -379,7 +379,7 @@
   }
 
   .card-back-field {
-    width:78px; height:112px; border-radius:10px;
+    width:96px; height:138px; border-radius:10px;
     background:linear-gradient(135deg,#1e3a5f,#0f1923);
     border:2px solid #4a9eff44;
     display:flex; flex-direction:column;
@@ -389,7 +389,7 @@
   }
 
   .card-back {
-    width:78px; height:112px; border-radius:10px;
+    width:96px; height:138px; border-radius:10px;
     background:linear-gradient(135deg,#2a3a50,#1a2535);
     border:2px solid #3a4a60;
     display:flex; align-items:center; justify-content:center;
@@ -412,7 +412,7 @@
   }
 
   @media(max-width:480px){
-    .card{width:64px;height:94px;}
+    .card{width:80px;height:116px;}
     .card-main{font-size:0.8rem;}
     .overlay-box{padding:22px 18px;}
     .lobby-box{padding:18px;}
@@ -569,7 +569,10 @@
     <h2 id="result-title">성공!</h2>
     <p id="result-desc"></p>
     <div id="result-verify" style="width:100%;margin:12px 0;"></div>
-    <button class="btn btn-primary" style="width:100%;margin-top:6px;" id="btn-next-round" onclick="nextRound()">다음 라운드 →</button>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="peekField()">카드 순서 확인</button>
+      <button class="btn btn-primary" style="flex:1;" id="btn-next-round" onclick="nextRound()">다음 라운드 →</button>
+    </div>
   </div>
 </div>
 
@@ -1380,22 +1383,38 @@ function showRoundResult(room){
   const dir=room.direction||'asc';
   const dirLabel=dir==='asc'?'오름차순':'내림차순';
 
+  // 라운드 종료 시 필드 앞면 강제 공개
+  const field=Array.isArray(room.field)?room.field:[];
+  renderLane(type, field, true);
+
   document.getElementById('result-emoji').textContent=success?'🎉':'😅';
   document.getElementById('result-title').textContent=success?'성공! 🎊':'아쉽게도 실패...';
   document.getElementById('result-desc').textContent=
-    `${typeLabel} · ${dirLabel} — `+(success?'올바른 순서로 모두 냈어요!':'순서가 맞지 않았어요.');
+    typeLabel+' · '+dirLabel+' — '+(success?'올바른 순서로 모두 냈어요!':'순서가 맞지 않았어요.');
 
   const vDiv=document.getElementById('result-verify');
   vDiv.innerHTML='';
   const row=document.createElement('div');
   row.className='verify-row';
-  row.innerHTML=`<span class="vr-label">${typeLabel} 순서</span>
-    <span class="${success?'vr-ok':'vr-fail'}">${success?'✅ 성공':'❌ 실패'}</span>`;
+  row.innerHTML='<span class="vr-label">'+typeLabel+' 순서</span>'
+    +'<span class="'+(success?'vr-ok':'vr-fail')+'">'+(success?'✅ 성공':'❌ 실패')+'</span>';
   vDiv.appendChild(row);
 
   const isLast=(room.currentRound||1)>=(room.totalRounds||5);
   document.getElementById('btn-next-round').textContent=isLast?'결과 보기 →':'다음 라운드 →';
   showOverlay('result');
+}
+
+// 결과 오버레이를 잠깐 숨기고 필드 확인
+function peekField(){
+  hideOverlay('result');
+  // 3초 후 자동으로 다시 오버레이 표시
+  const btn=document.createElement('button');
+  btn.className='btn btn-primary';
+  btn.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:50;padding:10px 28px;';
+  btn.textContent='결과로 돌아가기';
+  btn.onclick=()=>{ document.body.removeChild(btn); showOverlay('result'); };
+  document.body.appendChild(btn);
 }
 
 // ══════════════════════════════════════
