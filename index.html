@@ -653,7 +653,7 @@ function genDecPool(){
 
 function genPctPool(){
   const cards=[];
-  for(let i=1;i<=99;i++) cards.push({type:'pct',value:i});
+  for(let i=0;i<=100;i++) cards.push({type:'pct',value:i});
   return cards;
 }
 
@@ -1038,6 +1038,11 @@ function displayStartOverlay(room){
   const type=room.roundType||'frac';
   const typeLabel={frac:'분수 카드 🔵',dec:'소수 카드 🟢',pct:'백분율 카드 🟣'}[type];
   const typeName={frac:'분수',dec:'소수',pct:'백분율'}[type];
+  const typeRule={
+    frac:'분수 카드는 0부터 1까지의 숫자 범위를 이용합니다. 단, 분모는 2부터 10까지입니다.',
+    dec:'소수 카드는 소수 첫째 자리까지만 이용하고, 0.1부터 4.9까지의 숫자를 이용합니다.',
+    pct:'백분율 카드는 자연수만 취급하며, 0부터 100까지의 숫자를 이용합니다.'
+  }[type];
 
   document.getElementById('start-title').textContent='라운드 '+round+' 시작!';
   document.getElementById('start-desc').textContent='이번 라운드: '+typeLabel;
@@ -1051,8 +1056,12 @@ function displayStartOverlay(room){
     dirEl.textContent='⬇ 내림차순 (큰 수 → 작은 수)';
   }
 
-  // 내 손패 기준으로 범위 계산
+  // 라운드 카드 종류별 사용 범위와 내 손패 기준 범위 표시
   const rangeEl=document.getElementById('start-range');
+  let rangeHTML=
+    '<span style="color:var(--accent2);">📌 이번 카드 사용 범위</span><br>'+
+    '<span>'+typeRule+'</span>';
+
   if(myHand && myHand.length>0){
     const sorted=[...myHand].sort((a,b)=>normalizedValue(a)-normalizedValue(b));
     const minCard=sorted[0];
@@ -1060,14 +1069,14 @@ function displayStartOverlay(room){
     const minStr=cardValueReadable(minCard);
     const maxStr=cardValueReadable(maxCard);
     const total=myHand.length;
-    rangeEl.innerHTML=
+    rangeHTML +=
+      '<hr style="border:none;border-top:1px solid #3a4a60;margin:10px 0;">'+
       '<span style="color:var(--accent2);">📋 내 카드 범위</span><br>'+
       typeName+' 카드는 <strong style="color:var(--accent);">'+minStr+'</strong> 부터 '+
       '<strong style="color:var(--accent);">'+maxStr+'</strong> 까지의 범위에 '+
       '<strong style="color:var(--green);">'+total+'장</strong> 있습니다.';
-  } else {
-    rangeEl.innerHTML='';
   }
+  rangeEl.innerHTML=rangeHTML;
 
   showOverlay('start');
 }
