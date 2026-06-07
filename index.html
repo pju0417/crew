@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수학 카드 대전</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0f1923;
+    --panel: #1a2535;
+    --panel2: #212f42;
+    --accent: #f5a623;
+    --accent2: #e8d5a3;
+    --green: #4caf7d;
+    --red: #e05c5c;
+    --blue: #4a9eff;
+    --purple: #9b6dff;
+    --card-frac: #2d4a7a;
+    --card-dec: #2d6b4a;
+    --card-pct: #6b2d4a;
+    --text: #e8e0d0;
+    --text-dim: #8a9bb0;
+    --shadow: 0 8px 32px rgba(0,0,0,0.5);
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nanum Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(74,158,255,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(155,109,255,0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app { position: relative; z-index: 1; }
+
+  .btn {
+    font-family: 'Jua', sans-serif;
+    font-size: 1.1rem;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary   { background: var(--accent); color: #1a1a1a; }
+  .btn-primary:hover { background: #ffb940; box-shadow: 0 4px 20px rgba(245,166,35,0.4); }
+  .btn-secondary { background: var(--panel2); color: var(--text); border: 1px solid #3a4a60; }
+  .btn-secondary:hover { background: #2a3a50; }
+  .btn-green  { background: var(--green); color: #fff; }
+  .btn-green:hover  { background: #5dc48e; box-shadow: 0 4px 20px rgba(76,175,125,0.4); }
+  .btn-red    { background: var(--red); color: #fff; }
+  .btn-sm     { font-size: 0.9rem; padding: 8px 18px; border-radius: 8px; }
+
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ══ 로비 ══ */
+  #screen-lobby {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    gap: 0;
+  }
+  .lobby-title {
+    font-family: 'Jua', sans-serif;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 6px;
+    text-shadow: 0 0 40px rgba(245,166,35,0.4);
+  }
+  .lobby-subtitle {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+  }
+  .lobby-box {
+    background: var(--panel);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--shadow);
+    border: 1px solid #2a3a50;
+  }
+  .lobby-box h2 {
+    font-family: 'Jua', sans-serif;
+    font-size: 1.2rem;
+    margin-bottom: 18px;
+    color: var(--accent2);
+  }
+  .input-group { margin-bottom: 14px; }
+  .input-group label { display:block; font-size:0.83rem; color:var(--text-dim); margin-bottom:5px; }
+  .input-group input, .input-group select {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--panel2);
+    border: 1px solid #3a4a60;
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Nanum Gothic', sans-serif;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-group input:focus, .input-group select:focus { border-color: var(--accent); }
+  .input-group select option { background: #1a2535; }
+
+  .divider {
+    text-align: center; color: var(--text-dim);
+    margin: 20px 0; position: relative;
+  }
+  .divider::before, .divider::after {
+    content:''; position:absolute; top:50%;
+    width:38%; height:1px; background:#3a4a60;
+  }
+  .divider::before { left:0; } .divider::after { right:0; }
+
+  .room-code-display {
+    background: var(--panel2);
+    border: 2px dashed var(--accent);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .room-code-display .code {
+    font-family: 'Jua', sans-serif;
+    font-size: 2.6rem;
+    color: var(--accent);
+    letter-spacing: 8px;
+  }
+  .room-code-display p { font-size:0.82rem; color:var(--text-dim); margin-top:4px; }
+
+  .player-slot {
+    display:flex; align-items:center; gap:10px;
+    padding:9px 12px; background:var(--panel2);
+    border-radius:8px; margin-bottom:5px;
+  }
+  .player-slot .dot { width:9px;height:9px;border-radius:50%;background:var(--green);flex-shrink:0; }
+  .player-slot .dot.empty { background:#3a4a60; }
+  .player-slot .name { font-size:0.93rem; flex:1; }
+  .player-slot .tag { font-size:0.72rem;color:var(--text-dim);background:#2a3a50;padding:2px 7px;border-radius:5px; }
+  .player-slot .tag.ai   { color:var(--purple); }
+  .player-slot .tag.host { color:var(--accent); }
+
+  /* ══ 게임 ══ */
+  #screen-game { padding:0; flex-direction:column; }
+
+  .game-header {
+    background: var(--panel);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #2a3a50;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .game-header .round-info { font-family:'Jua',sans-serif; font-size:1rem; color:var(--accent); }
+  .direction-badge {
+    font-family:'Jua',sans-serif;
+    font-size:0.95rem;
+    padding:5px 14px;
+    border-radius:8px;
+    border:1px solid;
+  }
+  .direction-badge.asc  { background:rgba(76,175,125,0.15); border-color:var(--green); color:var(--green); }
+  .direction-badge.desc { background:rgba(74,158,255,0.15); border-color:var(--blue);  color:var(--blue); }
+
+  /* 플레이어 상태 바 */
+  .players-bar {
+    display:flex; gap:6px; padding:8px 16px;
+    background:var(--panel); border-bottom:1px solid #2a3a50;
+    overflow-x:auto;
+  }
+  .player-chip {
+    display:flex; align-items:center; gap:6px;
+    background:var(--panel2); border-radius:20px;
+    padding:5px 12px; flex-shrink:0;
+    border:1px solid transparent;
+    transition:border-color 0.3s;
+    font-size:0.83rem;
+  }
+  .player-chip.me { border-color:var(--accent); }
+  .player-chip .chip-dot { width:7px;height:7px;border-radius:50%;background:#3a4a60; }
+  .player-chip .chip-dot.done { background:var(--green); }
+  .player-chip .chip-cards {
+    font-family:'Jua',sans-serif; font-size:0.9rem; color:var(--accent);
+  }
+
+  /* 3줄 필드 */
+  .field-area {
+    flex:1; overflow-y:auto;
+    padding:12px 16px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+
+  .field-lane {
+    background:var(--panel);
+    border-radius:12px;
+    border:1px solid #2a3a50;
+    overflow:hidden;
+  }
+  .lane-header {
+    display:flex; align-items:center; gap:8px;
+    padding:8px 14px;
+    border-bottom:1px solid #2a3a50;
+  }
+  .lane-dot { width:10px;height:10px;border-radius:50%; }
+  .lane-dot.frac { background:var(--blue); }
+  .lane-dot.dec  { background:var(--green); }
+  .lane-dot.pct  { background:var(--purple); }
+  .lane-title { font-family:'Jua',sans-serif; font-size:0.95rem; }
+  .lane-count { font-size:0.78rem; color:var(--text-dim); margin-left:auto; }
+
+  .lane-cards {
+    display:flex; flex-wrap:wrap; gap:8px;
+    padding:10px 12px;
+    min-height:60px;
+    align-items:center;
+  }
+  .lane-empty {
+    color:var(--text-dim); font-size:0.83rem;
+    padding:4px 0;
+  }
+
+  /* 카드 */
+  .card {
+    width:78px; height:112px;
+    border-radius:10px;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:transform 0.18s, box-shadow 0.18s;
+    position:relative;
+    border:2px solid transparent;
+    user-select:none;
+    padding:6px;
+  }
+  .card:hover { transform:translateY(-6px); }
+  .card.selected {
+    border-color:var(--accent);
+    box-shadow:0 0 18px rgba(245,166,35,0.55);
+    transform:translateY(-10px);
+  }
+  .card.frac { background:linear-gradient(135deg, var(--card-frac), #1a3055); }
+  .card.dec  { background:linear-gradient(135deg, var(--card-dec),  #1a4a30); }
+  .card.pct  { background:linear-gradient(135deg, var(--card-pct),  #4a1a30); }
+  .card.placed { cursor:default; opacity:0.75; }
+  .card.placed:hover { transform:none; }
+  .card.wrong-glow { animation:wrongPulse 0.5s ease 3; }
+  @keyframes wrongPulse {
+    0%,100% { box-shadow:none; }
+    50% { box-shadow:0 0 20px rgba(224,92,92,0.8); }
+  }
+
+  .card-type-badge {
+    position:absolute; top:5px; left:5px;
+    font-size:0.58rem; font-family:'Jua',sans-serif;
+    padding:2px 5px; border-radius:4px; opacity:0.85;
+  }
+  .card.frac .card-type-badge { background:rgba(74,158,255,0.3); color:#a0c8ff; }
+  .card.dec  .card-type-badge { background:rgba(76,175,125,0.3); color:#a0f0c0; }
+  .card.pct  .card-type-badge { background:rgba(155,109,255,0.3); color:#d0b0ff; }
+
+  .card-main {
+    font-family:'Jua',sans-serif;
+    font-size:0.95rem;
+    text-align:center;
+    line-height:1.4;
+    color:#fff;
+    word-break:keep-all;
+  }
+  .card-main .frac-line { display:flex;flex-direction:column;align-items:center;gap:1px; }
+  .card-main .frac-num  { font-size:1rem; border-bottom:2px solid #fff; padding-bottom:2px; }
+  .card-main .frac-den  { font-size:1rem; padding-top:2px; }
+
+  /* 내 손패 */
+  .my-hand {
+    background:var(--panel);
+    border-top:1px solid #2a3a50;
+    padding:12px 16px;
+  }
+  .my-hand-title {
+    font-size:0.82rem; color:var(--text-dim);
+    margin-bottom:10px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .my-hand-cards {
+    display:flex; flex-wrap:wrap; gap:7px; justify-content:center;
+  }
+
+  .submit-area {
+    display:flex; align-items:center; justify-content:center;
+    gap:10px; padding:10px 16px;
+    background:var(--panel); border-top:1px solid #2a3a50;
+  }
+
+  /* 오버레이 */
+  .overlay { position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;backdrop-filter:blur(4px); }
+  .overlay.hidden { display:none; }
+  .overlay-box {
+    background:var(--panel); border-radius:20px; padding:32px 36px;
+    text-align:center; max-width:420px; width:100%;
+    border:1px solid #3a4a60;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    animation:popIn 0.28s ease;
+  }
+  @keyframes popIn { from{transform:scale(0.82);opacity:0} to{transform:scale(1);opacity:1} }
+  .overlay-box h2 { font-family:'Jua',sans-serif; font-size:1.7rem; margin-bottom:10px; }
+  .overlay-box p  { color:var(--text-dim); margin-bottom:16px; line-height:1.6; }
+  .overlay-box .big-emoji { font-size:2.8rem; margin-bottom:10px; }
+
+  /* 라운드 시작 오버레이 */
+  .round-start-box { }
+  .direction-big {
+    font-family:'Jua',sans-serif; font-size:1.6rem;
+    margin:12px 0; padding:14px 24px;
+    border-radius:12px;
+  }
+  .direction-big.asc  { background:rgba(76,175,125,0.2); color:var(--green); border:2px solid var(--green); }
+  .direction-big.desc { background:rgba(74,158,255,0.2); color:var(--blue);  border:2px solid var(--blue); }
+
+  /* 결과 판정 */
+  .verify-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 14px; background:var(--panel2);
+    border-radius:8px; margin-bottom:6px;
+    font-size:0.88rem;
+  }
+  .verify-row .vr-label { color:var(--text-dim); }
+  .verify-row .vr-ok   { color:var(--green); font-family:'Jua',sans-serif; }
+  .verify-row .vr-fail  { color:var(--red);   font-family:'Jua',sans-serif; }
+
+  /* 최종 결과 */
+  .round-history { width:100%; margin:12px 0; text-align:left; max-height:200px; overflow-y:auto; }
+  .history-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:7px 12px; background:var(--panel2);
+    border-radius:7px; margin-bottom:5px; font-size:0.85rem;
+  }
+  .history-row.success { border-left:3px solid var(--green); }
+  .history-row.fail    { border-left:3px solid var(--red); }
+
+  /* 토스트 */
+  #toast {
+    position:fixed; bottom:28px; left:50%;
+    transform:translateX(-50%) translateY(100px);
+    background:#2a3a50; color:var(--text);
+    padding:10px 22px; border-radius:100px;
+    font-size:0.88rem; transition:transform 0.28s;
+    z-index:200; border:1px solid #3a4a60; white-space:nowrap;
+  }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+
+  .watermark {
+    position:fixed; bottom:9px; right:12px;
+    font-size:0.68rem; color:rgba(255,255,255,0.13);
+    z-index:50; pointer-events:none; letter-spacing:0.5px;
+  }
+
+  .card-back {
+    width:78px; height:112px; border-radius:10px;
+    background:linear-gradient(135deg,#2a3a50,#1a2535);
+    border:2px solid #3a4a60;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem;
+  }
+
+  .waiting-dots::after {
+    content:'···'; animation:dots 1.2s infinite;
+  }
+  @keyframes dots {
+    0%{content:'·'} 33%{content:'··'} 66%{content:'···'}
+  }
+
+  /* 성공 팡파레 */
+  .confetti-burst { animation:burst 0.6s ease; }
+  @keyframes burst {
+    0%  { transform:scale(0.5); opacity:0; }
+    60% { transform:scale(1.1); }
+    100%{ transform:scale(1);   opacity:1; }
+  }
+
+  @media(max-width:480px){
+    .card{width:64px;height:94px;}
+    .card-main{font-size:0.8rem;}
+    .overlay-box{padding:22px 18px;}
+    .lobby-box{padding:18px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ 로비 ══ -->
+  <div id="screen-lobby" class="screen active">
+    <div class="lobby-title">🃏 수학 카드 협동</div>
+    <div class="lobby-subtitle">분수 · 소수 · 백분율 카드를 순서대로 맞춰요!</div>
+
+    <div class="lobby-box" id="lobby-main">
+      <h2>👤 내 이름 입력</h2>
+      <div class="input-group">
+        <label>닉네임</label>
+        <input type="text" id="input-name" placeholder="예: 수학왕" maxlength="8">
+      </div>
+      <div class="divider">방 만들기 또는 참가</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-primary" onclick="showCreateRoom()">🏠 방 만들기</button>
+        <button class="btn btn-secondary" onclick="showJoinRoom()">🔑 방 코드로 참가</button>
+      </div>
+    </div>
+
+    <div class="lobby-box" id="lobby-create" style="display:none;margin-top:14px;">
+      <h2>🏠 방 만들기</h2>
+      <div class="input-group">
+        <label>AI 플레이어 수</label>
+        <select id="select-ai">
+          <option value="0">없음 (실제 플레이어만)</option>
+          <option value="1">1명</option>
+          <option value="2">2명</option>
+          <option value="3">3명</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>총 라운드 수</label>
+        <select id="select-rounds">
+          <option value="3">3라운드</option>
+          <option value="5" selected>5라운드</option>
+          <option value="7">7라운드</option>
+        </select>
+      </div>
+      <button class="btn btn-green" style="width:100%;margin-top:6px;" onclick="createRoom()">방 만들기 →</button>
+      <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px;" onclick="backToMain()">← 뒤로</button>
+    </div>
+
+    <div class="lobby-box" id="lobby-waiting" style="display:none;margin-top:14px;">
+      <div class="room-code-display">
+        <div class="code" id="display-code">----</div>
+        <p>친구에게 이 코드를 알려주세요</p>
+      </div>
+      <div id="waiting-players-list"></div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-direction:column;">
+        <button class="btn btn-primary" id="btn-start" onclick="startGame()" style="display:none;width:100%;">🎮 게임 시작!</button>
+        <button class="btn btn-secondary btn-sm" style="width:100%;" onclick="leaveRoom()">← 나가기</button>
+      </div>
+    </div>
+
+    <div class="lobby-box" id="lobby-join" style="display:none;margin-top:14px;">
+      <h2>🔑 방 코드 입력</h2>
+      <div class="input-group">
+        <input type="text" id="input-code" placeholder="4자리 코드" maxlength="4"
+          style="text-align:center;font-size:1.8rem;letter-spacing:8px;font-family:'Jua',sans-serif;"
+          oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <button class="btn btn-green" style="width:100%;" onclick="joinRoom()">참가하기 →</button>
+      <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px;" onclick="backToMain()">← 뒤로</button>
+    </div>
+  </div>
+
+  <!-- ══ 게임 ══ -->
+  <div id="screen-game" class="screen">
+    <div class="game-header">
+      <div class="round-info" id="hdr-round">라운드 1 / 5</div>
+      <div class="direction-badge asc" id="hdr-dir">⬆ 오름차순</div>
+      <div style="font-size:0.82rem;color:var(--text-dim);" id="hdr-status">대기중</div>
+    </div>
+
+    <div class="players-bar" id="players-bar"></div>
+
+    <!-- 단일 필드 (라운드 분류에 따라 하나만 표시) -->
+    <div class="field-area">
+      <div class="field-lane" id="field-lane-frac">
+        <div class="lane-header">
+          <div class="lane-dot frac"></div>
+          <div class="lane-title">분수 카드</div>
+          <div class="lane-count" id="lane-count-frac">0장</div>
+        </div>
+        <div class="lane-cards" id="lane-frac">
+          <span class="lane-empty">아직 낸 카드가 없어요</span>
+        </div>
+      </div>
+
+      <div class="field-lane" id="field-lane-dec">
+        <div class="lane-header">
+          <div class="lane-dot dec"></div>
+          <div class="lane-title">소수 카드</div>
+          <div class="lane-count" id="lane-count-dec">0장</div>
+        </div>
+        <div class="lane-cards" id="lane-dec">
+          <span class="lane-empty">아직 낸 카드가 없어요</span>
+        </div>
+      </div>
+
+      <div class="field-lane" id="field-lane-pct">
+        <div class="lane-header">
+          <div class="lane-dot pct"></div>
+          <div class="lane-title">백분율 카드</div>
+          <div class="lane-count" id="lane-count-pct">0장</div>
+        </div>
+        <div class="lane-cards" id="lane-pct">
+          <span class="lane-empty">아직 낸 카드가 없어요</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 내 손패 -->
+    <div class="my-hand">
+      <div class="my-hand-title">
+        <span>내 카드 (클릭해서 선택)</span>
+        <span id="hand-count" style="color:var(--accent);">0장</span>
+      </div>
+      <div class="my-hand-cards" id="my-hand-cards"></div>
+    </div>
+
+    <div class="submit-area">
+      <button class="btn btn-secondary" onclick="cancelSelect()">선택 취소</button>
+      <button class="btn btn-primary" id="btn-submit" onclick="submitCard()" disabled>카드 내기</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- 라운드 시작 오버레이 -->
+<div id="overlay-start" class="overlay hidden">
+  <div class="overlay-box round-start-box">
+    <div class="big-emoji" id="start-emoji">🎲</div>
+    <h2 id="start-title">라운드 1 시작!</h2>
+    <p id="start-desc">이번 라운드의 방향입니다</p>
+    <div class="direction-big asc" id="start-dir">⬆ 오름차순</div>
+    <p style="margin-top:12px;font-size:0.85rem;">
+      분수 / 소수 / 백분율 줄에 각각<br>
+      <strong style="color:var(--accent);">순서에 맞게</strong> 카드를 내주세요!
+    </p>
+    <button class="btn btn-primary" style="width:100%;margin-top:18px;" onclick="closeStartOverlay()">준비 완료! 시작 🚀</button>
+  </div>
+</div>
+
+<!-- 결과 오버레이 -->
+<div id="overlay-result" class="overlay hidden">
+  <div class="overlay-box">
+    <div class="big-emoji" id="result-emoji">🎉</div>
+    <h2 id="result-title">성공!</h2>
+    <p id="result-desc"></p>
+    <div id="result-verify" style="width:100%;margin:12px 0;"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:6px;" id="btn-next-round" onclick="nextRound()">다음 라운드 →</button>
+  </div>
+</div>
+
+<!-- 최종 결과 오버레이 -->
+<div id="overlay-final" class="overlay hidden">
+  <div class="overlay-box">
+    <div class="big-emoji" id="final-emoji">🏆</div>
+    <h2 id="final-title">게임 종료!</h2>
+    <p id="final-desc"></p>
+    <div class="round-history" id="round-history"></div>
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="leaveRoom()">로비로</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="playAgain()">다시 하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">알림</div>
+<div class="watermark">made by 박선생</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+// ══════════════════════════════════════
+//  Firebase
+// ══════════════════════════════════════
+firebase.initializeApp({
+  apiKey: "AIzaSyCZuenSO5SB5s0LH5iZBEv625qAyO942cU",
+  authDomain: "crew-9c2ef.firebaseapp.com",
+  projectId: "crew-9c2ef",
+  storageBucket: "crew-9c2ef.firebasestorage.app",
+  messagingSenderId: "516544145139",
+  appId: "1:516544145139:web:fe84682c923ecd2ffdf986",
+  databaseURL: "https://crew-9c2ef-default-rtdb.asia-southeast1.firebasedatabase.app"
+});
+const db = firebase.database();
+
+// ══════════════════════════════════════
+//  카드 생성
+// ══════════════════════════════════════
+function gcd(a,b){ return b===0?a:gcd(b,a%b); }
+
+function genFracPool(){
+  const cards=[];
+  for(let den=2;den<=10;den++){
+    for(let num=0;num<=den;num++){
+      if(num===0||num===den||gcd(num,den)===1){
+        cards.push({type:'frac',num,den,value:num/den});
+      }
+    }
+  }
+  return cards;
+}
+
+function genDecPool(){
+  const cards=[];
+  for(let i=1;i<=49;i++) cards.push({type:'dec',value:i/10});
+  return cards;
+}
+
+function genPctPool(){
+  const cards=[];
+  for(let i=1;i<=99;i++) cards.push({type:'pct',value:i});
+  return cards;
+}
+
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
+
+// 같은 value가 없도록 유니크하게 n장 뽑기
+function pickUniqueCards(pool, n){
+  const seen=new Set();
+  const unique=shuffle(pool).filter(c=>{
+    const key=Math.round(c.value*10000); // 소수점 오차 방지
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+  return unique.slice(0,n).map(c=>({...c,variant:Math.floor(Math.random()*3)}));
+}
+
+// 한 라운드 전체 손패를 중복 없이 한 번에 뽑은 뒤 플레이어 수로 나눔
+function dealUniqueHands(pool, cardsPerPlayer, playerCount){
+  const total=cardsPerPlayer*playerCount;
+  const all=pickUniqueCards(pool, total);
+  const hands=[];
+  for(let i=0;i<playerCount;i++){
+    hands.push(all.slice(i*cardsPerPlayer,(i+1)*cardsPerPlayer));
+  }
+  return hands;
+}
+
+// 카드 표시 HTML
+function cardHTML(card){
+  const {type,num,den,value,variant} = card;
+  if(type==='frac'){
+    if(variant===0){ // 나눗셈
+      return `${num} ÷ ${den}`;
+    } else if(variant===1){ // 소수
+      const v = (num/den);
+      return v===0?'0':v===1?'1':v.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+    } else { // 분수
+      if(num===0) return '0';
+      if(num===den) return '1';
+      return `<span class="frac-line"><span class="frac-num">${num}</span><span class="frac-den">${den}</span></span>`;
+    }
+  } else if(type==='dec'){
+    const n10=Math.round(value*10), g=gcd(n10,10);
+    if(variant===0){ // 나눗셈
+      const pair=findDivPair(value);
+      return `${pair[0]} ÷ ${pair[1]}`;
+    } else if(variant===1){ // 분수
+      return `<span class="frac-line"><span class="frac-num">${n10/g}</span><span class="frac-den">${10/g}</span></span>`;
+    } else { // 소수
+      return value.toFixed(1);
+    }
+  } else { // pct
+    if(variant===0){ // 소수 비율 → 백분율
+      return `${(value/100).toFixed(2)}<br>→ ?%`;
+    } else if(variant===1){ // 글 설명
+      const total=pickNiceTotal(value);
+      const part=Math.round(total*value/100);
+      return `<span style="font-size:0.72rem;">${total}에<br>대한<br>${part}의<br>비율(%)</span>`;
+    } else { // 자연수 %
+      return `${value}%`;
+    }
+  }
+}
+
+function findDivPair(value){
+  for(let b=2;b<=20;b++){
+    const a=value*b;
+    if(Math.abs(a-Math.round(a))<0.001) return [Math.round(a),b];
+  }
+  return [Math.round(value*10),10];
+}
+
+function pickNiceTotal(pct){
+  for(const o of [10,20,25,50,100]){
+    if(Number.isInteger(o*pct/100)) return o;
+  }
+  return 100;
+}
+
+function normalizedValue(card){
+  if(card.type==='frac') return card.value;
+  if(card.type==='dec')  return card.value/4.9;
+  if(card.type==='pct')  return card.value/100;
+}
+
+// ══════════════════════════════════════
+//  상태
+// ══════════════════════════════════════
+let myUid='', myName='', roomCode='', roomRef=null;
+let isHost=false, myHand=[], selectedCard=null;
+let gameState=null, listeners=[];
+let roundHistory=[];
+
+// ══════════════════════════════════════
+//  UI 유틸
+// ══════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+function showOverlay(id){
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.add('hidden'));
+  document.getElementById('overlay-'+id).classList.remove('hidden');
+}
+function hideOverlay(id){ document.getElementById('overlay-'+id).classList.add('hidden'); }
+function toast(msg,ms=2400){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),ms);
+}
+
+// ══════════════════════════════════════
+//  로비
+// ══════════════════════════════════════
+function showCreateRoom(){
+  if(!checkName()) return;
+  document.getElementById('lobby-create').style.display='block';
+  document.getElementById('lobby-join').style.display='none';
+}
+function showJoinRoom(){
+  if(!checkName()) return;
+  document.getElementById('lobby-join').style.display='block';
+  document.getElementById('lobby-create').style.display='none';
+}
+function backToMain(){
+  ['lobby-create','lobby-join','lobby-waiting'].forEach(id=>
+    document.getElementById(id).style.display='none');
+}
+function checkName(){
+  myName=document.getElementById('input-name').value.trim();
+  if(!myName){toast('닉네임을 입력해주세요!');return false;}
+  return true;
+}
+
+// ══════════════════════════════════════
+//  방 만들기
+// ══════════════════════════════════════
+async function createRoom(){
+  if(!checkName()) return;
+  const aiCount    = parseInt(document.getElementById('select-ai').value);
+  const totalRounds= parseInt(document.getElementById('select-rounds').value);
+  myUid   = 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  isHost  = true;
+  roomCode= Math.random().toString(36).slice(2,6).toUpperCase();
+  roomRef = db.ref('cardGameCoop/rooms/'+roomCode);
+
+  const players={};
+  players[myUid]={name:myName,isAI:false,handCount:0,done:false,index:0};
+  for(let i=0;i<aiCount;i++){
+    players['ai_'+i]={name:`AI ${i+1}`,isAI:true,handCount:0,done:false,index:i+1};
+  }
+  await roomRef.set({
+    host:myUid, status:'waiting',
+    totalRounds, currentRound:0,
+    players, createdAt:Date.now(),
+    roundHistory:[]
+  });
+  showWaitingRoom();
+  subscribeRoom();
+}
+
+// ══════════════════════════════════════
+//  방 참가
+// ══════════════════════════════════════
+async function joinRoom(){
+  if(!checkName()) return;
+  const code=document.getElementById('input-code').value.trim().toUpperCase();
+  if(code.length!==4){toast('4자리 코드를 입력해주세요!');return;}
+  myUid   = 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  isHost  = false;
+  roomCode= code;
+  roomRef = db.ref('cardGameCoop/rooms/'+roomCode);
+  const snap=await roomRef.once('value');
+  const room=snap.val();
+  if(!room){toast('방을 찾을 수 없어요!');return;}
+  if(room.status!=='waiting'){toast('이미 시작된 게임이에요!');return;}
+  const cnt=Object.keys(room.players).length;
+  if(cnt>=4){toast('방이 꽉 찼어요!');return;}
+  const idx=Object.values(room.players).reduce((m,p)=>Math.max(m,p.index),-1)+1;
+  await roomRef.child('players/'+myUid).set({
+    name:myName,isAI:false,handCount:0,done:false,index:idx
+  });
+  showWaitingRoom();
+  subscribeRoom();
+}
+
+function showWaitingRoom(){
+  document.getElementById('lobby-create').style.display ='none';
+  document.getElementById('lobby-join').style.display   ='none';
+  document.getElementById('lobby-waiting').style.display='block';
+  document.getElementById('display-code').textContent   = roomCode;
+}
+
+// ══════════════════════════════════════
+//  Firebase 구독
+// ══════════════════════════════════════
+function subscribeRoom(){
+  if(!roomRef) return;
+  unsubscribeAll();
+  const handler=roomRef.on('value',snap=>{
+    const room=snap.val();
+    if(!room) return;
+    gameState=room;
+    onRoomUpdate(room);
+  });
+  listeners.push({ref:roomRef,cb:handler,event:'value'});
+}
+function unsubscribeAll(){
+  listeners.forEach(l=>l.ref.off(l.event,l.cb));
+  listeners=[];
+}
+
+// ══════════════════════════════════════
+//  방 업데이트 처리
+// ══════════════════════════════════════
+function onRoomUpdate(room){
+  if(room.status==='waiting'){
+    renderWaiting(room);
+  } else if(room.status==='playing'){
+    // 게임 화면 진입
+    if(document.getElementById('screen-lobby').classList.contains('active')){
+      showScreen('game');
+    }
+    // 새 손패 수신 (비호스트)
+    if(!isHost && room.newHands && room.newHands[myUid]){
+      myHand=room.newHands[myUid];
+      db.ref(`cardGameCoop/hands/${roomCode}/${myUid}`).set(myHand);
+      roomRef.child('newHands/'+myUid).remove();
+    }
+    renderGame(room);
+    // 라운드 시작 오버레이 (처음 playing 전환 시)
+    if(room.showStartOverlay){
+      displayStartOverlay(room);
+      if(isHost) roomRef.update({showStartOverlay:false});
+    }
+    // AI 처리
+    if(isHost) scheduleAI(room);
+  } else if(room.status==='round_end'){
+    renderGame(room);
+    showRoundResult(room);
+  } else if(room.status==='game_end'){
+    showFinalResult(room);
+  }
+}
+
+// ══════════════════════════════════════
+//  대기실 렌더링
+// ══════════════════════════════════════
+function renderWaiting(room){
+  const players=room.players||{};
+  const pList=Object.entries(players).sort((a,b)=>a[1].index-b[1].index);
+  const container=document.getElementById('waiting-players-list');
+  container.innerHTML='<h3 style="font-size:0.85rem;color:var(--text-dim);margin-bottom:8px;">참가자</h3>';
+  pList.forEach(([uid,p])=>{
+    const div=document.createElement('div');
+    div.className='player-slot';
+    const tag=uid===room.host?'<span class="tag host">방장</span>':
+               p.isAI?'<span class="tag ai">🤖 AI</span>':
+               '<span class="tag">참가자</span>';
+    div.innerHTML=`<div class="dot"></div><div class="name">${p.name}</div>${tag}`;
+    container.appendChild(div);
+  });
+  const empty=4-pList.length;
+  for(let i=0;i<empty;i++){
+    const div=document.createElement('div');
+    div.className='player-slot';
+    div.innerHTML=`<div class="dot empty"></div><div class="name" style="color:var(--text-dim)">대기중...</div>`;
+    container.appendChild(div);
+  }
+  const btn=document.getElementById('btn-start');
+  if(isHost && pList.length>=2){
+    btn.style.display='block';
+  } else if(isHost){
+    btn.style.display='none';
+    if(!container.querySelector('.need-msg')){
+      const msg=document.createElement('p');
+      msg.className='need-msg';
+      msg.style.cssText='color:var(--text-dim);font-size:0.82rem;text-align:center;margin-top:8px;';
+      msg.textContent='최소 2명이 필요합니다 (AI 포함)';
+      container.appendChild(msg);
+    }
+  } else {
+    btn.style.display='none';
+    if(!container.querySelector('.wait-msg')){
+      const msg=document.createElement('p');
+      msg.className='wait-msg';
+      msg.style.cssText='color:var(--text-dim);font-size:0.82rem;text-align:center;margin-top:8px;';
+      msg.innerHTML='<span class="waiting-dots">방장이 시작하기를 기다리는 중</span>';
+      container.appendChild(msg);
+    }
+  }
+}
+
+// ══════════════════════════════════════
+//  게임 시작 (호스트)
+// ══════════════════════════════════════
+// 라운드 분류 순서 (3라운드마다 순환, 셔플)
+const TYPE_CYCLE=['frac','dec','pct'];
+
+function pickRoundType(round, usedTypes){
+  // 아직 안 쓴 분류 우선, 없으면 전부 리셋
+  const remaining=TYPE_CYCLE.filter(t=>!usedTypes.includes(t));
+  const pool=remaining.length>0?remaining:TYPE_CYCLE;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+function getPoolForType(type){
+  if(type==='frac') return genFracPool();
+  if(type==='dec')  return genDecPool();
+  return genPctPool();
+}
+
+const CARDS_PER_PLAYER=5; // 한 라운드에 1인당 카드 수
+
+async function startGame(){
+  if(!isHost) return;
+  const room=gameState;
+  const players=room.players;
+  const pIds=Object.keys(players).sort((a,b)=>players[a].index-players[b].index);
+
+  const roundType=pickRoundType(1,[]);
+  const hands=dealUniqueHands(getPoolForType(roundType), CARDS_PER_PLAYER, pIds.length);
+  const newHands={}, aiHands={};
+  pIds.forEach((uid,i)=>{
+    newHands[uid]=hands[i];
+    if(players[uid].isAI) aiHands[uid]=hands[i];
+    if(uid===myUid) myHand=hands[i];
+  });
+
+  const dir=Math.random()<0.5?'asc':'desc';
+  const updates={
+    status:'playing', currentRound:1,
+    direction:dir,
+    roundType,
+    usedTypes:[roundType],
+    field:[],       // 단일 필드
+    aiHands, newHands:{},
+    showStartOverlay:true,
+    roundHistory:[],
+  };
+  pIds.forEach(uid=>{
+    updates[`players/${uid}/handCount`]=CARDS_PER_PLAYER;
+    updates[`players/${uid}/done`]=false;
+    if(!players[uid].isAI && uid!==myUid) updates[`newHands/${uid}`]=newHands[uid];
+  });
+
+  await roomRef.update(updates);
+  await db.ref(`cardGameCoop/hands/${roomCode}/${myUid}`).set(myHand);
+  renderHand();
+}
+
+// ══════════════════════════════════════
+//  라운드 시작 오버레이
+// ══════════════════════════════════════
+function displayStartOverlay(room){
+  const round=room.currentRound||1;
+  const dir=room.direction||'asc';
+  const type=room.roundType||'frac';
+  const typeLabel={frac:'분수 카드 🔵',dec:'소수 카드 🟢',pct:'백분율 카드 🟣'}[type];
+  document.getElementById('start-title').textContent=`라운드 ${round} 시작!`;
+  document.getElementById('start-desc').textContent=`이번 라운드: ${typeLabel}`;
+  const dirEl=document.getElementById('start-dir');
+  if(dir==='asc'){
+    dirEl.className='direction-big asc';
+    dirEl.textContent='⬆ 오름차순 (작은 수 → 큰 수)';
+  } else {
+    dirEl.className='direction-big desc';
+    dirEl.textContent='⬇ 내림차순 (큰 수 → 작은 수)';
+  }
+  showOverlay('start');
+}
+function closeStartOverlay(){ hideOverlay('start'); }
+
+// ══════════════════════════════════════
+//  게임 렌더링
+// ══════════════════════════════════════
+function renderGame(room){
+  if(!room) return;
+  const dir=room.direction||'asc';
+  const round=room.currentRound||1;
+  const type=room.roundType||'frac';
+  const typeLabel={frac:'분수 카드',dec:'소수 카드',pct:'백분율 카드'}[type];
+
+  document.getElementById('hdr-round').textContent=`라운드 ${round} / ${room.totalRounds}`;
+  const dirEl=document.getElementById('hdr-dir');
+  if(dir==='asc'){
+    dirEl.className='direction-badge asc'; dirEl.textContent='⬆ 오름차순';
+  } else {
+    dirEl.className='direction-badge desc'; dirEl.textContent='⬇ 내림차순';
+  }
+  // 플레이어 바
+  renderPlayersBar(room);
+  // 단일 필드
+  renderField(room);
+  // 손패
+  const myDone=room.players?.[myUid]?.done;
+  renderHand(!myDone && room.status==='playing');
+  // 상태
+  const doneCount=Object.values(room.players||{}).filter(p=>p.done).length;
+  const total=Object.keys(room.players||{}).length;
+  document.getElementById('hdr-status').textContent=
+    myDone?`내 카드 완료! (${doneCount}/${total}명 완료)`:
+    `${typeLabel}을 순서대로 내주세요! (${doneCount}/${total}명 완료)`;
+}
+
+function renderPlayersBar(room){
+  const players=room.players||{};
+  const pList=Object.entries(players).sort((a,b)=>a[1].index-b[1].index);
+  const bar=document.getElementById('players-bar');
+  bar.innerHTML='';
+  pList.forEach(([uid,p])=>{
+    const chip=document.createElement('div');
+    chip.className='player-chip'+(uid===myUid?' me':'');
+    chip.innerHTML=`
+      <div class="chip-dot${p.done?' done':''}"></div>
+      <span>${p.isAI?'🤖 ':''}${p.name}</span>
+      <span class="chip-cards">${p.handCount||0}장</span>
+      ${p.done?'<span style="color:var(--green);font-size:0.78rem;">✓완료</span>':''}
+    `;
+    bar.appendChild(chip);
+  });
+}
+
+function renderField(room){
+  const type=room.roundType||'frac';
+  const field=room.field||[];
+  // 3개 레인 중 해당 분류만 보이게
+  ['frac','dec','pct'].forEach(t=>{
+    const lane=document.getElementById('field-lane-'+t);
+    if(lane) lane.style.display=(t===type)?'block':'none';
+  });
+  renderLane(type, field);
+}
+
+function renderLane(type, cards){
+  const lane=document.getElementById('lane-'+type);
+  const count=document.getElementById('lane-count-'+type);
+  lane.innerHTML='';
+  count.textContent=cards.length+'장';
+  if(cards.length===0){
+    lane.innerHTML='<span class="lane-empty">아직 낸 카드가 없어요</span>';
+    return;
+  }
+  cards.forEach(card=>{
+    const el=createCardEl(card,false);
+    el.classList.add('placed');
+    lane.appendChild(el);
+  });
+}
+
+function createCardEl(card, interactive){
+  const div=document.createElement('div');
+  div.className=`card ${card.type}`;
+  const typeLabel={frac:'분수',dec:'소수',pct:'백분율'}[card.type];
+  div.innerHTML=`
+    <div class="card-type-badge">${typeLabel}</div>
+    <div class="card-main">${cardHTML(card)}</div>
+  `;
+  return div;
+}
+
+// ══════════════════════════════════════
+//  손패 렌더링
+// ══════════════════════════════════════
+function renderHand(interactive=true){
+  const container=document.getElementById('my-hand-cards');
+  container.innerHTML='';
+  document.getElementById('hand-count').textContent=myHand.length+'장';
+  myHand.forEach((card,i)=>{
+    const el=createCardEl(card,interactive);
+    if(interactive){
+      el.onclick=()=>selectCard(i,el);
+    } else {
+      el.classList.add('placed');
+    }
+    container.appendChild(el);
+  });
+  document.getElementById('btn-submit').disabled=true;
+  selectedCard=null;
+}
+
+// ══════════════════════════════════════
+//  카드 선택 & 제출
+// ══════════════════════════════════════
+function selectCard(idx, el){
+  if(!gameState||gameState.status!=='playing') return;
+  if(gameState.players?.[myUid]?.done){toast('이미 모든 카드를 냈어요!');return;}
+  document.querySelectorAll('#my-hand-cards .card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedCard=idx;
+  document.getElementById('btn-submit').disabled=false;
+}
+function cancelSelect(){
+  document.querySelectorAll('#my-hand-cards .card').forEach(c=>c.classList.remove('selected'));
+  selectedCard=null;
+  document.getElementById('btn-submit').disabled=true;
+}
+
+async function submitCard(){
+  if(selectedCard===null){toast('카드를 선택해주세요!');return;}
+  const room=gameState;
+  if(!room||room.status!=='playing') return;
+  if(room.players?.[myUid]?.done){toast('이미 모든 카드를 냈어요!');return;}
+
+  const card=myHand[selectedCard];
+  myHand.splice(selectedCard,1);
+  selectedCard=null;
+  document.getElementById('btn-submit').disabled=true;
+
+  const field=[...(room.field||[]),card];
+  const done=myHand.length===0;
+
+  const updates={
+    field,
+    [`players/${myUid}/handCount`]:myHand.length,
+    [`players/${myUid}/done`]:done,
+  };
+  await roomRef.update(updates);
+  await db.ref(`cardGameCoop/hands/${roomCode}/${myUid}`).set(myHand);
+  renderHand(!done);
+
+  if(isHost){
+    const freshSnap=await roomRef.once('value');
+    const freshRoom=freshSnap.val();
+    const allDone=Object.values(freshRoom.players||{}).every(p=>p.done);
+    if(allDone) await verifyAndEndRound(freshRoom);
+  }
+}
+
+// ══════════════════════════════════════
+//  AI 처리 (호스트)
+// ══════════════════════════════════════
+let aiTimer=null;
+function scheduleAI(room){
+  if(aiTimer) return;
+  const players=room.players||{};
+  const hasAILeft=Object.entries(players).some(([uid,p])=>p.isAI && !p.done);
+  if(!hasAILeft) return;
+  aiTimer=setTimeout(()=>{ aiTimer=null; doAITurn(room); },1000+Math.random()*1200);
+}
+
+async function doAITurn(room){
+  if(!room||room.status!=='playing') return;
+  const players=room.players||{};
+  const aiHands=room.aiHands||{};
+  let updated=false;
+
+  for(const [uid,p] of Object.entries(players)){
+    if(!p.isAI||p.done) continue;
+    let hand=aiHands[uid]||[];
+    if(hand.length===0) continue;
+
+    const card=hand[0];
+    hand=hand.slice(1);
+    const done=hand.length===0;
+    const field=[...(room.field||[]),card];
+
+    await roomRef.update({
+      field,
+      [`aiHands/${uid}`]:hand,
+      [`players/${uid}/handCount`]:hand.length,
+      [`players/${uid}/done`]:done,
+    });
+    room={...(await roomRef.once('value')).val()};
+    updated=true;
+    break;
+  }
+
+  if(updated){
+    const freshRoom=(await roomRef.once('value')).val();
+    const allDone=Object.values(freshRoom.players||{}).every(p=>p.done);
+    if(allDone){
+      await verifyAndEndRound(freshRoom);
+    } else {
+      setTimeout(()=>doAITurn(freshRoom),900+Math.random()*900);
+    }
+  }
+}
+
+// ══════════════════════════════════════
+//  라운드 검증 (호스트)
+// ══════════════════════════════════════
+async function verifyAndEndRound(room){
+  const dir=room.direction||'asc';
+  const field=room.field||[];
+
+  const checkOrder=(cards)=>{
+    for(let i=1;i<cards.length;i++){
+      const a=normalizedValue(cards[i-1]);
+      const b=normalizedValue(cards[i]);
+      if(dir==='asc'  && b<a-0.00001) return false;
+      if(dir==='desc' && b>a+0.00001) return false;
+    }
+    return true;
+  };
+
+  const success=field.length>0 && checkOrder(field);
+  const round=room.currentRound||1;
+  const type=room.roundType||'frac';
+  const history=[...(room.roundHistory||[]),{round,dir,type,success}];
+  const isLast=round>=room.totalRounds;
+
+  await roomRef.update({
+    status:isLast?'game_end':'round_end',
+    verifyResult:{success},
+    roundHistory:history,
+  });
+}
+
+// ══════════════════════════════════════
+//  라운드 결과
+// ══════════════════════════════════════
+function showRoundResult(room){
+  const v=room.verifyResult||{};
+  const success=v.success;
+  const type=room.roundType||'frac';
+  const typeLabel={frac:'분수 카드',dec:'소수 카드',pct:'백분율 카드'}[type];
+  const dir=room.direction||'asc';
+  const dirLabel=dir==='asc'?'오름차순':'내림차순';
+
+  document.getElementById('result-emoji').textContent=success?'🎉':'😅';
+  document.getElementById('result-title').textContent=success?'성공! 🎊':'아쉽게도 실패...';
+  document.getElementById('result-desc').textContent=
+    `${typeLabel} · ${dirLabel} — `+(success?'올바른 순서로 모두 냈어요!':'순서가 맞지 않았어요.');
+
+  const vDiv=document.getElementById('result-verify');
+  vDiv.innerHTML='';
+  const row=document.createElement('div');
+  row.className='verify-row';
+  row.innerHTML=`<span class="vr-label">${typeLabel} 순서</span>
+    <span class="${success?'vr-ok':'vr-fail'}">${success?'✅ 성공':'❌ 실패'}</span>`;
+  vDiv.appendChild(row);
+
+  const isLast=(room.currentRound||1)>=(room.totalRounds||5);
+  document.getElementById('btn-next-round').textContent=isLast?'결과 보기 →':'다음 라운드 →';
+  showOverlay('result');
+}
+
+// ══════════════════════════════════════
+//  다음 라운드 (호스트)
+// ══════════════════════════════════════
+async function nextRound(){
+  hideOverlay('result');
+  const room=gameState;
+  if(!room) return;
+  if((room.currentRound||1)>=(room.totalRounds||5)){
+    showFinalResult(room); return;
+  }
+  if(!isHost) return;
+
+  const players=room.players||{};
+  const pIds=Object.keys(players).sort((a,b)=>players[a].index-players[b].index);
+
+  // 이미 쓴 분류 추적해서 다음 분류 선택
+  const usedTypes=room.usedTypes||[];
+  const nextType=pickRoundType((room.currentRound||1)+1, usedTypes);
+  const newUsed=[...usedTypes,nextType];
+
+  const hands=dealUniqueHands(getPoolForType(nextType), CARDS_PER_PLAYER, pIds.length);
+  const newHands={}, aiHands={};
+  pIds.forEach((uid,i)=>{
+    newHands[uid]=hands[i];
+    if(players[uid].isAI) aiHands[uid]=hands[i];
+    if(uid===myUid) myHand=hands[i];
+  });
+
+  const dir=Math.random()<0.5?'asc':'desc';
+  const nextRnd=(room.currentRound||1)+1;
+
+  const updates={
+    status:'playing', currentRound:nextRnd,
+    direction:dir, roundType:nextType, usedTypes:newUsed,
+    field:[],
+    aiHands, newHands:{},
+    showStartOverlay:true,
+    verifyResult:null,
+  };
+  pIds.forEach(uid=>{
+    updates[`players/${uid}/handCount`]=CARDS_PER_PLAYER;
+    updates[`players/${uid}/done`]=false;
+    if(!players[uid].isAI && uid!==myUid) updates[`newHands/${uid}`]=newHands[uid];
+  });
+  await roomRef.update(updates);
+  await db.ref(`cardGameCoop/hands/${roomCode}/${myUid}`).set(myHand);
+  renderHand(true);
+}
+
+// ══════════════════════════════════════
+//  최종 결과
+// ══════════════════════════════════════
+function showFinalResult(room){
+  const history=room.roundHistory||[];
+  const successCount=history.filter(h=>h.success).length;
+  const total=room.totalRounds||5;
+
+  document.getElementById('final-emoji').textContent=
+    successCount===total?'🏆':successCount>=total/2?'😊':'💪';
+  document.getElementById('final-title').textContent='게임 종료!';
+  document.getElementById('final-desc').textContent=
+    `${total}라운드 중 ${successCount}라운드 성공! `+
+    (successCount===total?'완벽해요! 🎊':successCount===0?'다음엔 꼭 성공해요!':'잘 했어요!');
+
+  const histEl=document.getElementById('round-history');
+  histEl.innerHTML='';
+  const typeLabel={frac:'분수',dec:'소수',pct:'백분율'};
+  history.forEach(h=>{
+    const row=document.createElement('div');
+    row.className='history-row '+(h.success?'success':'fail');
+    const dirText=h.dir==='asc'?'⬆오름':'⬇내림';
+    const tLabel=typeLabel[h.type]||'?';
+    row.innerHTML=`
+      <span>${h.round}라운드 · ${tLabel} · ${dirText}</span>
+      <span>${h.success?'✅ 성공':'❌ 실패'}</span>
+    `;
+    histEl.appendChild(row);
+  });
+  showOverlay('final');
+}
+
+// ══════════════════════════════════════
+//  기타
+// ══════════════════════════════════════
+async function leaveRoom(){
+  unsubscribeAll();
+  if(roomRef && myUid){
+    await roomRef.child('players/'+myUid).remove().catch(()=>{});
+    await db.ref(`cardGameCoop/hands/${roomCode}/${myUid}`).remove().catch(()=>{});
+  }
+  ['final','result','start'].forEach(id=>hideOverlay(id));
+  ['lobby-waiting','lobby-create','lobby-join'].forEach(id=>
+    document.getElementById(id).style.display='none');
+  myHand=[]; selectedCard=null; gameState=null;
+  isHost=false; roomCode=''; roomRef=null; aiTimer=null;
+  showScreen('lobby');
+}
+
+async function playAgain(){
+  hideOverlay('final');
+  if(isHost && roomRef){
+    await roomRef.update({status:'waiting',currentRound:0,roundHistory:[]});
+  }
+}
+
+// 오래된 방 청소 (1시간)
+db.ref('cardGameCoop/rooms').once('value',snap=>{
+  const rooms=snap.val()||{};
+  const now=Date.now();
+  Object.entries(rooms).forEach(([code,room])=>{
+    if(room.createdAt && now-room.createdAt>3600000){
+      db.ref('cardGameCoop/rooms/'+code).remove();
+      db.ref('cardGameCoop/hands/'+code).remove();
+    }
+  });
+});
+
+console.log('🃏 수학 카드 협동 v2.0 - made by 박선생');
+</script>
+</body>
+</html>
