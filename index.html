@@ -770,6 +770,7 @@ function toast(msg,ms=2400){
 // ══════════════════════════════════════
 function showCreateRoom(){
   if(!checkName()) return;
+  toast('닉네임: ' + myName + ' ✓');
   document.getElementById('lobby-create').style.display='block';
   document.getElementById('lobby-join').style.display='none';
 }
@@ -793,26 +794,34 @@ function checkName(){
 // ══════════════════════════════════════
 async function createRoom(){
   if(!checkName()) return;
-  const aiCount    = parseInt(document.getElementById('select-ai').value);
-  const totalRounds= parseInt(document.getElementById('select-rounds').value);
-  myUid   = 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-  isHost  = true;
-  roomCode= Math.random().toString(36).slice(2,6).toUpperCase();
-  roomRef = db.ref('cardGameCoop/rooms/'+roomCode);
+  toast('방 만드는 중...');
+  try {
+    const aiCount    = parseInt(document.getElementById('select-ai').value);
+    const totalRounds= parseInt(document.getElementById('select-rounds').value);
+    myUid   = 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+    isHost  = true;
+    roomCode= Math.random().toString(36).slice(2,6).toUpperCase();
+    roomRef = db.ref('cardGameCoop/rooms/'+roomCode);
 
-  const players={};
-  players[myUid]={name:myName,isAI:false,handCount:0,done:false,index:0};
-  for(let i=0;i<aiCount;i++){
-    players['ai_'+i]={name:`AI ${i+1}`,isAI:true,handCount:0,done:false,index:i+1};
+    const players={};
+    players[myUid]={name:myName,isAI:false,handCount:0,done:false,index:0};
+    for(let i=0;i<aiCount;i++){
+      players['ai_'+i]={name:'AI '+(i+1),isAI:true,handCount:0,done:false,index:i+1};
+    }
+    await roomRef.set({
+      host:myUid, status:'waiting',
+      totalRounds, currentRound:0,
+      players, createdAt:Date.now(),
+      roundHistory:[]
+    });
+    showWaitingRoom();
+    subscribeRoom();
+  } catch(e) {
+    const panel=document.getElementById('debug-panel');
+    panel.style.display='block';
+    panel.textContent += '[createRoom 오류] ' + e.message + '\n';
+    toast('방 만들기 실패: ' + e.message);
   }
-  await roomRef.set({
-    host:myUid, status:'waiting',
-    totalRounds, currentRound:0,
-    players, createdAt:Date.now(),
-    roundHistory:[]
-  });
-  showWaitingRoom();
-  subscribeRoom();
 }
 
 // ══════════════════════════════════════
@@ -1113,7 +1122,7 @@ function renderLane(type, cards, reveal=false){
       // 뒷면
       const back=document.createElement('div');
       back.className='card-back-field';
-      back.innerHTML=\`<span style="font-size:1.4rem;">🃏</span><span style="font-size:0.7rem;margin-top:4px;opacity:0.6;">\${i+1}번째</span>\`;
+      back.innerHTML=`<span style="font-size:1.4rem;">🃏</span><span style="font-size:0.7rem;margin-top:4px;opacity:0.6;">${i+1}번째</span>`;
       lane.appendChild(back);
     }
   });
