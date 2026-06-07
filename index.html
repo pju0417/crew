@@ -557,10 +557,7 @@
     <h2 id="start-title">라운드 1 시작!</h2>
     <p id="start-desc">이번 라운드의 방향입니다</p>
     <div class="direction-big asc" id="start-dir">⬆ 오름차순</div>
-    <p style="margin-top:12px;font-size:0.85rem;">
-      분수 / 소수 / 백분율 줄에 각각<br>
-      <strong style="color:var(--accent);">순서에 맞게</strong> 카드를 내주세요!
-    </p>
+    <div id="start-range" style="margin-top:14px;background:var(--panel2);border-radius:10px;padding:12px 16px;font-size:0.85rem;line-height:2;text-align:left;"></div>
     <button class="btn btn-primary" style="width:100%;margin-top:18px;" onclick="closeStartOverlay()">준비 완료! 시작 🚀</button>
   </div>
 </div>
@@ -1021,13 +1018,27 @@ async function startGame(){
 // ══════════════════════════════════════
 //  라운드 시작 오버레이
 // ══════════════════════════════════════
+// 카드 값을 사람이 읽기 쉬운 형태로 변환
+function cardValueReadable(card){
+  if(card.type==='frac'){
+    if(card.value===0) return '0';
+    if(card.value===1) return '1';
+    return card.num+'/'+card.den;
+  }
+  if(card.type==='dec') return card.value.toFixed(1);
+  if(card.type==='pct') return card.value+'%';
+}
+
 function displayStartOverlay(room){
   const round=room.currentRound||1;
   const dir=room.direction||'asc';
   const type=room.roundType||'frac';
   const typeLabel={frac:'분수 카드 🔵',dec:'소수 카드 🟢',pct:'백분율 카드 🟣'}[type];
-  document.getElementById('start-title').textContent=`라운드 ${round} 시작!`;
-  document.getElementById('start-desc').textContent=`이번 라운드: ${typeLabel}`;
+  const typeName={frac:'분수',dec:'소수',pct:'백분율'}[type];
+
+  document.getElementById('start-title').textContent='라운드 '+round+' 시작!';
+  document.getElementById('start-desc').textContent='이번 라운드: '+typeLabel;
+
   const dirEl=document.getElementById('start-dir');
   if(dir==='asc'){
     dirEl.className='direction-big asc';
@@ -1036,6 +1047,25 @@ function displayStartOverlay(room){
     dirEl.className='direction-big desc';
     dirEl.textContent='⬇ 내림차순 (큰 수 → 작은 수)';
   }
+
+  // 내 손패 기준으로 범위 계산
+  const rangeEl=document.getElementById('start-range');
+  if(myHand && myHand.length>0){
+    const sorted=[...myHand].sort((a,b)=>normalizedValue(a)-normalizedValue(b));
+    const minCard=sorted[0];
+    const maxCard=sorted[sorted.length-1];
+    const minStr=cardValueReadable(minCard);
+    const maxStr=cardValueReadable(maxCard);
+    const total=myHand.length;
+    rangeEl.innerHTML=
+      '<span style="color:var(--accent2);">📋 내 카드 범위</span><br>'+
+      typeName+' 카드는 <strong style="color:var(--accent);">'+minStr+'</strong> 부터 '+
+      '<strong style="color:var(--accent);">'+maxStr+'</strong> 까지의 범위에 '+
+      '<strong style="color:var(--green);">'+total+'장</strong> 있습니다.';
+  } else {
+    rangeEl.innerHTML='';
+  }
+
   showOverlay('start');
 }
 function closeStartOverlay(){ hideOverlay('start'); }
@@ -1398,6 +1428,9 @@ async function nextRound(){
 
   const dir=Math.random()<0.5?'asc':'desc';
   const nextRnd=(room.currentRound||1)+1;
+
+  // field를 Firebase에서 완전히 삭제 후 나머지 업데이트
+  await roomRef.child('field').remove();
 
   const updates={
     status:'playing', currentRound:nextRnd,
