@@ -411,6 +411,73 @@
     100%{ transform:scale(1);   opacity:1; }
   }
 
+  /* 데모 카드 애니메이션 */
+  .lobby-title-row {
+    display:flex; align-items:center; justify-content:center;
+    gap:14px; margin-bottom:6px;
+  }
+  .demo-cards {
+    display:flex; gap:16px; justify-content:center;
+    margin-bottom:28px; perspective:600px;
+  }
+  .demo-card-wrap {
+    perspective:600px;
+  }
+  .demo-card {
+    width:48px; height:68px;
+    position:relative;
+    transform-style:preserve-3d;
+    transition:transform 0.6s ease;
+    border-radius:8px;
+  }
+  .demo-card.flipped { transform:rotateY(180deg); }
+  .demo-front, .demo-back {
+    position:absolute; inset:0;
+    border-radius:12px;
+    backface-visibility:hidden;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:8px;
+  }
+  /* 앞면: 뒷면 디자인 */
+  .demo-front {
+    background:linear-gradient(135deg,#1e3a5f,#0f1923);
+    border:2px solid #4a9eff44;
+  }
+  .demo-front::after {
+    content:'?';
+    font-family:'Jua',sans-serif;
+    font-size:2rem;
+    color:rgba(255,255,255,0.5);
+  }
+  /* 뒷면: 카드 내용 */
+  .demo-back {
+    transform:rotateY(180deg);
+    border:2px solid transparent;
+  }
+  .demo-back.frac { background:linear-gradient(135deg,#2d4a7a,#1a3055); border-color:#4a9eff55; }
+  .demo-back.dec  { background:linear-gradient(135deg,#2d6b4a,#1a4a30); border-color:#4caf7d55; }
+  .demo-back.pct  { background:linear-gradient(135deg,#6b2d4a,#4a1a30); border-color:#9b6dff55; }
+  .demo-front.frac { border-color:#4a9eff66; }
+  .demo-front.dec  { border-color:#4caf7d66; }
+  .demo-front.pct  { border-color:#9b6dff66; }
+  .demo-badge {
+    font-size:0.5rem; font-family:'Jua',sans-serif;
+    padding:1px 5px; border-radius:3px;
+    position:absolute; top:4px; left:4px; opacity:0.85;
+  }
+  .demo-back.frac .demo-badge { background:rgba(74,158,255,0.3); color:#a0c8ff; }
+  .demo-back.dec  .demo-badge { background:rgba(76,175,125,0.3); color:#a0f0c0; }
+  .demo-back.pct  .demo-badge { background:rgba(155,109,255,0.3); color:#d0b0ff; }
+  .demo-content {
+    font-family:'Jua',sans-serif;
+    font-size:0.72rem; color:#fff; text-align:center; line-height:1.4;
+    margin-top:8px;
+  }
+  .demo-frac-line { display:flex;flex-direction:column;align-items:center; }
+  .demo-frac-num  { border-bottom:1px solid #fff; padding-bottom:1px; font-size:0.75rem; }
+  .demo-frac-den  { padding-top:1px; font-size:0.75rem; }
+
   /* 게임 방법 */
   .howto-section {
     margin-bottom:18px;
@@ -462,7 +529,21 @@
 
   <!-- ══ 로비 ══ -->
   <div id="screen-lobby" class="screen active">
-    <div class="lobby-title">🃏 수학 카드 협동</div>
+    <div class="lobby-title-row">
+      <div class="demo-card-wrap">
+        <div class="demo-card" id="demo-inner">
+          <div class="demo-front" id="demo-front"></div>
+          <div class="demo-back" id="demo-back"></div>
+        </div>
+      </div>
+      <div class="lobby-title">수학 카드 협동</div>
+      <div class="demo-card-wrap">
+        <div class="demo-card" id="demo-inner2">
+          <div class="demo-front" id="demo-front2"></div>
+          <div class="demo-back" id="demo-back2"></div>
+        </div>
+      </div>
+    </div>
     <div class="lobby-subtitle">분수 · 소수 · 백분율 카드를 순서대로 맞춰요!</div>
 
     <div class="lobby-box" id="lobby-main">
@@ -661,7 +742,7 @@
         <li>라운드 시작 — 이번 라운드 <strong>카드 종류</strong>와 <strong>방향(오름/내림차순)</strong> 공개</li>
         <li>각자 카드를 나눠 받음 (전체 8장을 인원 수로 나눔)</li>
         <li>카드에 적힌 식을 계산해서 값을 파악</li>
-        <li>팀원과 상의해 순서에 맞게 카드를 냄</li>
+        <li>말하지 않고 <strong>눈치껏</strong> 순서에 맞게 카드를 냄</li>
         <li>모두 다 내면 자동으로 순서 검증 → 성공 / 실패</li>
       </ol>
     </div>
@@ -1675,6 +1756,67 @@ db.ref('cardGameCoop/rooms').once('value', snap => {
 });
 
 function showHowTo(){ showOverlay('howto'); }
+
+// ══════════════════════════════════════
+//  홈 화면 데모 카드 애니메이션 (1장)
+// ══════════════════════════════════════
+(function initDemoCards(){
+  const DEMOS = [
+    { type:'frac', label:'분수', main:'<span class="demo-frac-line"><span class="demo-frac-num">3</span><span class="demo-frac-den">4</span></span>' },
+    { type:'pct',  label:'백분율', main:'75%' },
+    { type:'dec',  label:'소수', main:'1.4' },
+    { type:'frac', label:'분수', main:'3 ÷ 4' },
+    { type:'pct',  label:'백분율', main:'0.4<br>→ ?%' },
+    { type:'dec',  label:'소수', main:'<span class="demo-frac-line"><span class="demo-frac-num">7</span><span class="demo-frac-den">5</span></span>' },
+    { type:'frac', label:'분수', main:'0.75' },
+    { type:'dec',  label:'소수', main:'7 ÷ 5' },
+    { type:'pct',  label:'백분율', main:'40%' },
+    { type:'frac', label:'분수', main:'<span class="demo-frac-line"><span class="demo-frac-num">1</span><span class="demo-frac-den">2</span></span>' },
+    { type:'dec',  label:'소수', main:'2.5' },
+    { type:'pct',  label:'백분율', main:'50%' },
+  ];
+
+  function makeFlipCard(innerId, frontId, backId, startIdx){
+    const inner = document.getElementById(innerId);
+    const front = document.getElementById(frontId);
+    const back  = document.getElementById(backId);
+    if(!inner||!front||!back) return;
+    let idx = startIdx;
+
+    function setEl(el, item){
+      el.className = el.className.split(' ')[0] + ' ' + item.type;
+      el.innerHTML = '<div class="demo-badge">'+item.label+'</div>'
+                   + '<div class="demo-content">'+item.main+'</div>';
+    }
+    // 첫 뒤집기 전까지 front는 빈 상태 유지 (CSS ::after 의 ? 표시)
+    return function flip(){
+      const next = DEMOS[idx % DEMOS.length];
+      setEl(back, next);
+      inner.classList.add('flipped');
+      setTimeout(()=>{
+        inner.style.transition='none';
+        inner.classList.remove('flipped');
+        setEl(front, next);
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{ inner.style.transition=''; }));
+        idx++;
+      }, 600);
+    };
+  }
+
+  const flip1 = makeFlipCard('demo-inner',  'demo-front',  'demo-back',  0);
+  const flip2 = makeFlipCard('demo-inner2', 'demo-front2', 'demo-back2', 4);
+  if(!flip1||!flip2) return;
+
+  // 왼쪽 먼저, 1.2초 후 오른쪽
+  setTimeout(()=>{
+    flip1();
+    setInterval(flip1, 2500);
+  }, 1000);
+  setTimeout(()=>{
+    flip2();
+    setInterval(flip2, 2500);
+  }, 2200);
+})();
 
 console.log('🃏 수학 카드 협동 v2.0 - made by 박선생');
 </script>
